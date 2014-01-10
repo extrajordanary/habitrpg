@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Only do the minimal amount of work before forking just in case of a dyno restart
 var cluster = require("cluster");
 var nconf = require('nconf');
@@ -42,6 +43,62 @@ if (false && cluster.isMaster && (nconf.get('NODE_ENV') == 'development' || ncon
         console.info('Connected with Mongoose');
     });
 
+=======
+require('coffee-script') // remove this once we've fully converted over
+
+var express = require("express");
+var http = require("http");
+var path = require("path");
+var optimist = require('optimist');
+var app = express();
+var nconf = require('nconf');
+var utils = require('./utils');
+var cron = require('./scripts/cron');
+var middleware = require('./middleware');
+var domainMiddleware = require('domain-middleware');
+var swagger = require("swagger-node-express");
+var moment = require("moment");
+var server;
+var TWO_WEEKS = 1000 * 60 * 60 * 24 * 14;
+
+// ------------ Setup configurations ------------
+utils.setupConfig();
+
+// ------------  MongoDB Configuration ------------
+mongoose = require('mongoose');
+require('./models/user'); //load up the user schema - TODO is this necessary?
+require('./models/group');
+require('./models/challenge');
+mongoose.connect(nconf.get('NODE_DB_URI'), {auto_reconnect:true}, function(err) {
+    if (err) throw err;
+    console.info('Connected with Mongoose');
+});
+
+// ------------  Run Cron Script -------------------
+var argv = optimist
+        .usage('Usage: $0 [--cron]')
+        .boolean('cron')
+        .describe('cron', 'Runs the cron script and then exits.')
+        .describe('cron-hour', 'Run cron for a set hour in this timezone. Defaults to current hour.')
+        .check(function(argv) {
+            var hour = argv['cron-hour'];
+            if (hour == undefined) return true;
+            else return (hour >= 0 && hour < 24);
+        })
+        .argv;
+
+if (argv.cron) {
+    cron.runCron({currentHour: argv['cron-hour']}, function(err, results) {
+        if (err) {
+            console.log("There were errors while running cron!");
+            console.log(err);
+        }
+        console.log("Cron completed at " + moment().format());
+        console.log("Processed cron for " + results.length + " user(s).");
+        process.exit();
+    });
+} else {
+>>>>>>> Add script that let's you manually run cron form the command line
 
     // ------------  Passport Configuration ------------
     var passport = require('passport')
